@@ -38,6 +38,10 @@ namespace RaptorDB
         /// <param name="msg"></param>
         /// <param name="objs"></param>
         void Info(object msg, params object[] objs);  // 1
+
+        event EventHandler<string> LogAdded;
+
+        List<string> GetLastLogs();
     }
 
     internal class FileLogger
@@ -212,13 +216,14 @@ namespace RaptorDB
             return sb.ToString();
         }
 
-        public void Log(string logtype, string type, string meth, string msg, params object[] objs)
+        public string Log(string logtype, string type, string meth, string msg, params object[] objs)
         {
             var l = FormatLog(logtype, type, meth, msg, objs);
             lock (_que)
                 _que.Enqueue(l);
             lock (_log)
                 _log.Enqueue(l);
+            return l;
         }
 
         internal List<string> GetLastLogs()
@@ -248,6 +253,8 @@ namespace RaptorDB
 
         private string typename = "";
 
+        public event EventHandler<string> LogAdded;
+
         private void log(string logtype, string msg, params object[] objs)
         {
             string meth = "";
@@ -257,7 +264,14 @@ namespace RaptorDB
                 System.Diagnostics.StackFrame sf = st.GetFrame(0);
                 meth = sf.GetMethod().Name;
             }
-            FileLogger.Instance.Log(logtype, typename, meth, msg, objs);
+            var logstring = FileLogger.Instance.Log(logtype, typename, meth, msg, objs);
+            if(LogAdded != null)
+                LogAdded(this, logstring);
+        }
+
+        public List<string> GetLastLogs()
+        {
+            return FileLogger.Instance.GetLastLogs();
         }
 
         #region ILog Members
@@ -288,7 +302,7 @@ namespace RaptorDB
         {
             if (FileLogger.Instance._logabove <= 1)
                 log("INFO", "" + msg, objs);
-        }
+        }        
         #endregion
     }
 

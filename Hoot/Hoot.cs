@@ -190,6 +190,11 @@ namespace RaptorDB
             }
         }
 
+        public ILog GetLogger()
+        {
+            return _log;
+        }
+
         #region [  P R I V A T E   M E T H O D S  ]
 
         private void checkloaded()
